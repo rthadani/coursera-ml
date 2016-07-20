@@ -2,15 +2,8 @@
   (:require [clojure.core.matrix :as mat]
             [incanter.core :as incanter]
             [incanter.io :as io]
-            ))
+            [coursera-ml.linear-regression.reader :as house-data]))
 
-(def train-data
-  (io/read-dataset "/media/sf_rohit-mount/mine/coursera-ml/data/kc_house_train_data.csv"
-                   :header true))
-
-(def test-data
-  (io/read-dataset "/media/sf_rohit-mount/mine/coursera-ml/data/kc_house_test_data.csv"
-                   :header true))
 
 (defn num-rows
   [data-frame]
@@ -62,7 +55,7 @@
       transpose (mat/transpose diff) ]
     (mat/mul diff transpose)))
 
-#_(get-data train-data [:sqft_living] :price)
+#_(get-data house-data/train-data [:sqft_living] :price)
 #_(def features-matrix (*1 0))
 #_(def output (*2 1))
 #_(def initial-weights [-47000 1])
@@ -70,14 +63,14 @@
 #_(def tolerance (*' 2.5 (Math/pow 10 7)))
 #_(regression-gradient-descent features-matrix output initial-weights step-size tolerance (Double/MAX_VALUE))
 #_(def output-weights *1)
-#_(get-data test-data [:sqft_living] :price)
+#_(get-data house-data/test-data [:sqft_living] :price)
 #_(def test-features (*1 0))
 #_(def test-price (*2 1))
 #_ (predictions (get test-features 0) output-weights)
 #_ (rss (predictions test-features output-weights) test-price)
 ;=> 2.7540004490212878E14
 
-#_(get-data train-data [:sqft_living :sqft_living15] :price)
+#_(get-data house-data/train-data [:sqft_living :sqft_living15] :price)
 #_(def features-matrix (*1 0))
 #_(def output (*2 1))
 #_(def initial-weights [-100000 1 1])
@@ -85,7 +78,7 @@
 #_(def tolerance (*' 1 (Math/pow 10 9)))
 #_(regression-gradient-descent features-matrix output initial-weights step-size tolerance (Double/MAX_VALUE))
 #_(def output-weights *1)
-#_(get-data test-data [:sqft_living :sqft_living15] :price)
+#_(get-data house-data/test-data [:sqft_living :sqft_living15] :price)
 #_(def test-features (*1 0))
 #_(def test-price (*2 1))
 #_ (predictions (get test-features 0) output-weights)
