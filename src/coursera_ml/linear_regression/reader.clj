@@ -31,3 +31,14 @@
 
 #_(def assignment-3-train-data
   (load-data "wk3_kc_house_train_data"))
+(def small-train-data
+  (load-data "kc_house_data_small_train.csv"))
+
+(def small-test-data
+  (load-data "kc_house_data_small_test.csv"))
+
+(def small-validation-data
+  (load-data "kc_house_data_validation.csv"))
+
+(def smallall-data
+  (load-data "kc_house_data_small.csv"))

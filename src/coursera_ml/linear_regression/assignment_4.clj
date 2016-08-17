@@ -2,19 +2,8 @@
   (:require [clojure.core.matrix :as mat]
             [incanter.core :as incanter]
             [coursera-ml.linear-regression.reader :as house-data]
-            [incanter.charts :as charts]))
-
-(defn num-rows
-  [data-frame]
-  (-> (incanter/dim data-frame)
-      first))
-
-(defn get-data
-  [data-frame input-features output]
-  (let [all-ones (repeat (num-rows data-frame) 1)
-        features-matrix (mat/transpose (cons all-ones (map #(incanter/$ % data-frame) input-features)))
-        output-vector (vec (incanter/$ output data-frame))]
-    [features-matrix output-vector]))
+            [incanter.charts :as charts]
+            [coursera-ml.linear-regression.utils :as utils]))
 
 (defn predictions
   [features-matrix weights]
@@ -44,15 +33,10 @@
           new-weights (vec (for [i (range 0 (count weights))] (-' (nth weights i) (*' step-size (get derivatives i)))))]
       (recur [features-matrix output] new-weights step-size l2-penalty (dec iterations)))))
 
-(defn rss [predictions output]
-  (let [diff (mat/sub predictions output)
-        transpose (mat/transpose diff)]
-    (mat/mul diff transpose)))
-
-(def data (get-data house-data/train-data [:sqft_living] :price))
-(def test-data (get-data house-data/test-data [:sqft_living] :price))
-(def data-model1 (get-data house-data/train-data [:sqft_living :sqft_living15] :price))
-(def test-data-model1 (get-data house-data/test-data [:sqft_living :sqft_living15] :price))
+(def data (utils/get-data house-data/train-data [:sqft_living] :price))
+(def test-data (utils/get-data house-data/test-data [:sqft_living] :price))
+(def data-model1 (utils/get-data house-data/train-data [:sqft_living :sqft_living15] :price))
+(def test-data-model1 (utils/get-data house-data/test-data [:sqft_living :sqft_living15] :price))
 #_(def simple-weights-0-penalty (ridge-regression-gradient-descent
                                 data
                                [0 0]
@@ -73,11 +57,11 @@
 #_(incanter/view plot)
 #_(charts/add-lines plot (incanter/$ :sqft_living house-data/train-data) (predictions (get data 0) simple-weights-0-penalty))
 #_(charts/add-lines plot (incanter/$ :sqft_living house-data/train-data) (predictions (get data 0) simple-weights-high-penalty))
-#_(rss (predictions (get test-data 0) [0 0])
+#_(utils/rss (predictions (get test-data 0) [0 0])
      (get test-data 1))
-#_(rss (predictions (get test-data 0) simple-weights-0-penalty)
+#_(utils/rss (predictions (get test-data 0) simple-weights-0-penalty)
         (get test-data 1))
-#_(rss (predictions (get test-data 0) simple-weights-high-penalty)
+#_(utils/rss (predictions (get test-data 0) simple-weights-high-penalty)
      (get test-data 1))
 #_(def multiple-weights-0-penalty (ridge-regression-gradient-descent
                                   data-model1
@@ -91,11 +75,11 @@
                                    (Math/pow 10 -12)
                                    (Math/pow 10 11)
                                    1000))
-#_(rss (predictions (get test-data-model1 0) [0 0 0])
+#_(utils/rss (predictions (get test-data-model1 0) [0 0 0])
      (get test-data 1))
-#_(rss (predictions (get test-data-model1 0) multiple-weights-0-penalty)
+#_(utils/rss (predictions (get test-data-model1 0) multiple-weights-0-penalty)
         (get test-data 1))
-#_(rss (predictions (get test-data-model1 0) multiple-weights-high-penalty)
+#_(utils/rss (predictions (get test-data-model1 0) multiple-weights-high-penalty)
      (get test-data 1))
 
 #_(get (predictions (get test-data-model1 0) multiple-weights-0-penalty) 0)
