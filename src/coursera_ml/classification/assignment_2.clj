@@ -3,9 +3,11 @@
             [clojure.string :as str]
             [cheshire.core :as json]
             [clojure.core.matrix :as mat]
+            [nd4clj.matrix :as matimp]
             [incanter.core :as incanter]))
 
 
+(mat/set-current-implementation :nd4j)
 
 (defn remove-punctuation
   [word]
@@ -68,7 +70,7 @@
   (let [m (make-features-matrix prepared-data important-words)
         sentiment (map :sentiment prepared-data)
         all-ones (repeat (count prepared-data) 1)]
-    [(mat/transpose (cons all-ones (mat/transpose m))) (vec sentiment)]))
+    [(mat/matrix (mat/transpose (cons all-ones (mat/transpose m)))) (vec sentiment)]))
 
 (defn prediction
   [score]
@@ -76,20 +78,21 @@
 
 (defn predict-probability
   [feature-matrix coefficients]
-  (->> (mat/mul feature-matrix (mat/transpose coefficients))
-       (map prediction)))
+  (as-> (mat/mmul feature-matrix (mat/transpose coefficients)) $
+       (mat/get-column $ 0)
+       (map prediction $)))
 
 (defn feature-derivative
   [feature errors]
-  (mat/mul feature errors))
+  (->> (mat/column-matrix errors)
+       (mat/mmul feature)))
 
 (defn log-likelihood
   [feature-matrix sentiment coefficients]
-  (let [scores (mat/mul feature-matrix (mat/transpose coefficients))
+  (let [scores (mat/get-column (mat/mmul feature-matrix (mat/transpose coefficients)) 0)
         log-exp (map #(let [l (Math/log (inc (Math/pow Math/E (* -1 %))))] (if (Double/isNaN l) (* -1 %) l)) scores)
         indicators (vec (map #(if (> % 0) 0 -1) sentiment))
-        first-term (incanter/to-vect (mat/transpose (incanter/mult scores indicators)))]
-    #_(println scores indicators log-exp first-term)
+        first-term (incanter/to-vect (mat/transpose (mat/mul scores indicators)))]
     (apply + (mat/sub first-term log-exp))))
 
 
@@ -100,16 +103,14 @@
     (map-indexed (fn [i p] (error (nth sentiment i) p)) prediction-probability)))
 
 (defn logistic-regression
-  [[feature-matrix sentiment] coefficients step-size max-iter]
-  (println max-iter)
+  [[feature-matrix sentiment] coeff-matrix step-size max-iter]
   (if (zero? max-iter)
-    (vec coefficients)
-    (let [predictions (predict-probability feature-matrix coefficients)
+    coeff-matrix
+    (let [predictions (predict-probability feature-matrix coeff-matrix)
           errors (prediction-errors predictions sentiment)
-          dataset (incanter/to-dataset feature-matrix)
-          coefficients (for [j (range (count coefficients))
-                             :let [fd (feature-derivative (incanter/$ j dataset) errors)]]
-                         (* step-size fd))]
+          coefficients (mat/transpose (vec (for [j (range (mat/column-count feature-matrix))
+                                              :let [fd (feature-derivative  (mat/get-column feature-matrix j) errors)]]
+                                          (mat/scale step-size fd))))]
       (when (zero? (mod max-iter 30))
         (println (log-likelihood feature-matrix sentiment coefficients)))
       (recur [feature-matrix sentiment] coefficients step-size (dec max-iter)))))
@@ -143,7 +144,10 @@
 #_ (def coefficients
      (logistic-regression
        (features-matrix prepared-data important-words)
-       (vec (repeat (inc (count important-words)) 0))
+       (mat/matrix (vec (vec (repeat (inc (count important-words)) 0))))
        (Math/pow 10 -7)
        301))
-
+(def a (mat/matrix [[1 2 3] [1 -1 -1]]))
+(def s [-1 1])
+(def c (mat/matrix [[1 3 -1]]))
+#_(logistic-regression [a s] c 1 10)
